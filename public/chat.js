@@ -12,7 +12,10 @@ const socket = io();
 let existingUserName = getCookie("username");
 let existingColor = getCookie("nickcolor");
 
+
+//first event to check if cookie exists
 $(document).ready(function() {
+    console.log("inside load " + existingUserName);
     if(existingColor){
         defaultUserNameColor = existingColor;
     }
@@ -25,6 +28,7 @@ $(document).ready(function() {
 });
 
 
+// on submitting new message . This block also checks if /nick or /nickcolor is submitted
 form.addEventListener("submit", function (event) {
     event.preventDefault();
     msg = input.value;
@@ -42,6 +46,9 @@ form.addEventListener("submit", function (event) {
     return false;
 }, false);
 
+
+
+// show past chat log (upto 200)
 socket.on("chat_history", function (data) {
     console.log(data);
     for (record of data) {
@@ -51,6 +58,8 @@ socket.on("chat_history", function (data) {
     }
 });
 
+
+//updates user list
 socket.on("user_list", function (data) {
     //$('#user-list').empty();
     while( users.firstChild ){
@@ -66,39 +75,57 @@ socket.on("user_list", function (data) {
     }
 });
 
+
+// new message to be added in the chat log
 socket.on("chat_message", function (data) {
     time = formatTime(data.time);
     data.time = time;
     addMessage(data,"#000000");
 });
 
+
+// message for user to let them know of username
 socket.on("user_join", function (data) {
-    addMessage("You have joined the chat as " + data + ".");
+    data.message = "You have joined the chat as " + data.username + ".";
+    time = formatTime(data.time);
+    data.time = time;
+    addMessage(data, '#000000');
 });
 
+
+//server side warning messages will be in red color
 socket.on("server_message", function (data) {
     time = formatTime(data.time);
     data.time = time;
     addMessage(data, "#680C10");
-})
-
-
-socket.on("user_leave", function (data) {
-    addMessage(data + " has left the chat.");
 });
 
 
+//user leave notification
+socket.on("user_leave", function (data) {
+    time = formatTime(data.time);
+    data.time = time;
+    data.message = data.username + " has left the chat.";
+    addMessage(data, "#000000");
+});
+
+
+//displays nickname in the header section
 socket.on("show_nickname", function (data) {
     setCookie("username", data);
     header.innerHTML = "Welcome to chat room, " + data + " !";
 });
 
+
+//changes username deafault color
 socket.on("color_change", function (data) {
     setCookie("nickcolor", data);
     defaultUserNameColor=data;
 
 });
 
+
+// adds message to list of messages in the chat log
 function addMessage(data, messageColor) {
     let li = document.createElement("li");
 
@@ -126,11 +153,15 @@ function addMessage(data, messageColor) {
     messages.scrollTo(0, document.body.scrollHeight);
 }
 
+
+// formats time stamps to show hour and mins only
 function formatTime(currentTime) {
 
     return currentTime.slice(0, 5);
 }
 
+
+// set a cookie with expiry date of 1 day
 //code snippet taken from https://www.w3schools.com/js/js_cookies.asp
 function setCookie(cname, cvalue) {
     var d = new Date();
@@ -139,6 +170,8 @@ function setCookie(cname, cvalue) {
     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
+
+// retrieves the specified cookie
 //code snippet taken from https://www.w3schools.com/js/js_cookies.asp
 function getCookie(cname) {
     var name = cname + "=";

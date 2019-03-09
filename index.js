@@ -4,45 +4,62 @@ const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const port = process.env.PORT || 3000;
 
-var path=require('path');
+const path=require('path');
+
 
 //Initialize application with route
 app.use(express.static(path.join(__dirname, '/public')));
+
 
 app.get("/", function(req, res) {
     res.sendFile(__dirname + "/index.html");
 });
 
+
 let users = [];
+let counts = [];
 let history = [];
 
 let count = 1;
 const defaultUsername = "user";
 io.on("connection", function(socket) {
 
+    console.log(`Socket ${socket.id} connected.`);
     // check if existing user
     socket.on("existing_user", function(data) {
 
-        if(data.isExisting){
+        if(data.isExisting && data.username){
+            console.log("user name was existing" + data.username);
             socket.username = data.username;
+            if(! users.includes(socket.username)){
+                console.log("user name was not included");
+                users.push(socket.username);
+            }
+
         }else {
             //assiging unique username on connection
+            counts = counts.sort(function(a, b){return a - b});
+            if(counts.includes(count)){
+                count = counts[counts.length - 1] + 1;
+            }
             socket.username = defaultUsername + count;
-            count = count + 1;
+            counts.push(count);
+            console.log("user name was not existing" + socket.username);
             users.push(socket.username);
-            socket.emit("user_join", socket.username);
+
         }
 
+        socket.emit("user_join", {time: new Date().toTimeString(), username: socket.username});
         socket.emit("show_nickname", socket.username);
 
+        // console.log(socket.chatHistory );
+        socket.emit("chat_history", history);
+
+        //sending users list to the client
+        io.emit("user_list", { list: users});
+
+
     });
-
-
-   // console.log(socket.chatHistory );
-    socket.emit("chat_history", history);
-
-    //sending users list to the client
-    io.emit("user_list", { list: users});
 
 
     //on receiving new message from client side
@@ -109,13 +126,19 @@ io.on("connection", function(socket) {
 
     // on disconnect
     socket.on("disconnect", function(data) {
-        socket.broadcast.emit("user_leave", socket.username);
+        console.log(`Socket ${socket.id} disconnected.`);
+        socket.broadcast.emit("user_leave", {time: new Date().toTimeString(), username : socket.username});
         users = users.filter(v => v !== socket.username);
         io.emit("user_list", { list: users});
 
 
     });
 });
+
+
+generateUniqueId = function() {
+    return "_" + new Date().valueOf() + Math.random().toFixed(16).substring(2);
+};
 
 
 http.listen(port, function() {
