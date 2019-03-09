@@ -80,7 +80,8 @@ io.on("connection", function(socket) {
             socket.emit("show_nickname", socket.username);
 
         }else{
-            socket.emit("server_message", "You cannot have this nickname! Already Taken");
+            date  = new Date().toTimeString();
+            socket.emit("server_message", { time: date, username : "system", message: "You cannot have this nickname! Already Taken"});
         }
 
         console.log(users);
@@ -90,15 +91,17 @@ io.on("connection", function(socket) {
     // changing nick name colour request
     socket.on("change_nickcolor", function(data) {
         console.log("Inside change colour name :" + socket.username);
+        console.log(data.color);
 
         let validHex='/([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i';
         let pattern = new RegExp(validHex);
 
-        if( pattern.test(data.color)){
+        if(true){
             console.log(data.color);
-            socket.emit("colour_change", "#" + data.color);
+            socket.emit("color_change", "#" + data.color);
         }else{
-            socket.emit("server_message", "Not a valid colour hex");
+            date  = new Date().toTimeString();
+            socket.emit("server_message", { time : date, username : "system", message: "Not a valid colour hex"});
         }
 
     });
