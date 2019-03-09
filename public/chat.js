@@ -9,22 +9,16 @@ let defaultUserNameColor = "#DB7093";
 
 const socket = io();
 
-let existingUserName = getCookie("username");
-let existingColor = getCookie("nickcolor");
+
+//sets cookie for username
+socket.on("set_cookie_username", function (data) {
+    setCookie("username", data);
+});
 
 
-//first event to check if cookie exists
-$(document).ready(function() {
-    console.log("inside load " + existingUserName);
-    if(existingColor){
-        defaultUserNameColor = existingColor;
-    }
-    if(existingUserName){
-        socket.emit("existing_user", {isExisting: true, username : existingUserName});
-    }else{
-        socket.emit("existing_user", {isExisting: false, username : existingUserName});
-    }
-
+//sets cookie for username
+socket.on("set_cookie_color", function (data) {
+    setCookie("nick_color", data);
 });
 
 
@@ -112,14 +106,12 @@ socket.on("user_leave", function (data) {
 
 //displays nickname in the header section
 socket.on("show_nickname", function (data) {
-    setCookie("username", data);
     header.innerHTML = "Welcome to chat room, " + data + " !";
 });
 
 
 //changes username deafault color
 socket.on("color_change", function (data) {
-    setCookie("nickcolor", data);
     defaultUserNameColor=data;
 
 });
@@ -170,21 +162,3 @@ function setCookie(cname, cvalue) {
     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
-
-// retrieves the specified cookie
-//code snippet taken from https://www.w3schools.com/js/js_cookies.asp
-function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
-    for(var i = 0; i <ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
-        }
-    }
-    return "";
-}

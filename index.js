@@ -1,17 +1,37 @@
-const express=require('express');
+const express = require('express');
 const app = express();
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const port = process.env.PORT || 3000;
 
-const path=require('path');
+const path = require('path');
 
 
 //Initialize application with route
 app.use(express.static(path.join(__dirname, '/public')));
 
 
-app.get("/", function(req, res) {
+var session = require("express-session")({
+    secret: "session-secret",
+    resave: true,
+    saveUninitialized: true
+});
+
+//socket session
+var sharedsession = require("express-socket.io-session");
+
+
+// Use express-session middleware for express
+app.use(session);
+
+// Use shared session middleware for socket.io
+// setting autoSave:true
+io.use(sharedsession(session, {
+    autoSave: true
+}));
+
+
+app.get("/", function (req, res) {
     res.sendFile(__dirname + "/index.html");
 });
 
@@ -22,125 +42,156 @@ let history = [];
 
 let count = 1;
 const defaultUsername = "user";
-io.on("connection", function(socket) {
 
-    console.log(`Socket ${socket.id} connected.`);
-    // check if existing user
-    socket.on("existing_user", function(data) {
 
-        if(data.isExisting && data.username){
-            console.log("user name was existing" + data.username);
-            socket.username = data.username;
-            if(! users.includes(socket.username)){
+io.sockets.on("connection", function (socket) {
+
+        // getting all cookies
+        let cookies = socket.handshake.headers.cookie;
+
+        let userIDcookie = getCookie(cookies, "username");
+        let colorCookie = getCookie(cookies, "nick_color");
+
+        console.log(userIDcookie);
+
+
+
+        if (userIDcookie) {
+            console.log("user name was existing" + userIDcookie);
+            socket.username = userIDcookie;
+            if (!users.includes(socket.username)) {
                 console.log("user name was not included");
                 users.push(socket.username);
             }
 
-        }else {
+        } else {
             //assiging unique username on connection
-            counts = counts.sort(function(a, b){return a - b});
-            if(counts.includes(count)){
+            counts = counts.sort(function (a, b) {
+                return a - b
+            });
+            if (counts.includes(count)) {
                 count = counts[counts.length - 1] + 1;
             }
             socket.username = defaultUsername + count;
             counts.push(count);
             console.log("user name was not existing" + socket.username);
             users.push(socket.username);
+            socket.emit("set_cookie_username", socket.username);
 
         }
 
-        socket.emit("user_join", {time: new Date().toTimeString(), username: socket.username});
+        if(colorCookie){
+            socket.emit("color_change", "#" + colorCookie);
+        }
+
+        socket.broadcast.emit("user_join", {time: new Date().toTimeString(), username: socket.username});
         socket.emit("show_nickname", socket.username);
 
         // console.log(socket.chatHistory );
         socket.emit("chat_history", history);
 
         //sending users list to the client
-        io.emit("user_list", { list: users});
+        io.emit("user_list", {list: users});
 
 
-    });
+        //on receiving new message from client side
+        socket.on("chat_message", function (data) {
+            data.username = this.username;
+            data.time = new Date().toTimeString();
 
 
-    //on receiving new message from client side
-    socket.on("chat_message", function(data) {
-        data.username = this.username;
-        data.time = new Date().toTimeString();
+            if (history.length < 200) {
+                history.push(data);
+            } else {
+                history.shift();
+                history.push(data);
+            }
+            console.trace(history);
+
+            io.emit("chat_message", data);
+        });
 
 
-        if(history.length < 200) {
-            history.push(data);
-        }else{
-            history.shift();
-            history.push(data);
-        }
-        console.trace(history);
+        //changing nick name request
+        socket.on("change_nickname", function (data) {
+            console.log("Inside change user name :" + socket.username);
 
-        io.emit("chat_message", data);
-    });
+            oldnickName = socket.username;
 
+            let index = users.indexOf(data.username);    // <-- Not supported in <IE9
+            console.log(index);
+            if (index === -1) {
+                socket.username = data.username;
+                console.log(socket.username);
+                users.push(socket.username);
+                users = users.filter(v => v !== oldnickName);
+                io.emit("user_list", {list: users});
+                socket.emit("show_nickname", socket.username);
+                socket.emit("set_cookie_username", socket.username);
 
-    //changing nick name request
-    socket.on("change_nickname", function(data) {
-        console.log("Inside change user name :" + socket.username);
+            } else {
+                date = new Date().toTimeString();
+                socket.emit("server_message", {
+                    time: date,
+                    username: "system",
+                    message: "You cannot have this nickname! Already Taken"
+                });
+            }
 
-        oldnickName = socket.username;
-
-        let index = users.indexOf(data.username);    // <-- Not supported in <IE9
-        console.log(index);
-        if (index === -1) {
-            socket.username = data.username;
-            console.log(socket.username);
-            users.push(socket.username);
-            users = users.filter(v => v !== oldnickName);
-            io.emit("user_list", { list: users});
-            socket.emit("show_nickname", socket.username);
-
-        }else{
-            date  = new Date().toTimeString();
-            socket.emit("server_message", { time: date, username : "system", message: "You cannot have this nickname! Already Taken"});
-        }
-
-        console.log(users);
-    });
+            console.log(users);
+        });
 
 
-    // changing nick name colour request
-    socket.on("change_nickcolor", function(data) {
-        console.log("Inside change colour name :" + socket.username);
-        console.log(data.color);
-
-        let validHex='/([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i';
-        let pattern = new RegExp(validHex);
-
-        if(true){
+        // changing nick name colour request
+        socket.on("change_nickcolor", function (data) {
+            console.log("Inside change colour name :" + socket.username);
             console.log(data.color);
-            socket.emit("color_change", "#" + data.color);
-        }else{
-            date  = new Date().toTimeString();
-            socket.emit("server_message", { time : date, username : "system", message: "Not a valid colour hex"});
+
+            let validHex = '/^[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}';
+            let pattern = new RegExp(validHex);
+
+            if (pattern.test(data.color)) {
+                console.log(data.color);
+                socket.emit("color_change", "#" + data.color);
+                socket.emit("set_cookie_color", "#" + data.color);
+            } else {
+                date = new Date().toTimeString();
+                socket.emit("server_message", {time: date, username: "system", message: "Not a valid colour hex"});
+            }
+
+        });
+
+
+        // on disconnect
+        socket.on("disconnect", function (data) {
+            console.log(`Socket ${socket.id} disconnected.`);
+            socket.broadcast.emit("user_leave", {time: new Date().toTimeString(), username: socket.username});
+            users = users.filter(v => v !== socket.username);
+            io.emit("user_list", {list: users});
+
+
+        });
+    }
+);
+
+
+// retrieves the specified cookie
+//code snippet taken from https://www.w3schools.com/js/js_cookies.asp
+function getCookie(cookies, cname) {
+    var name = cname + "=";
+    var ca = cookies.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
         }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
 
-    });
-
-
-    // on disconnect
-    socket.on("disconnect", function(data) {
-        console.log(`Socket ${socket.id} disconnected.`);
-        socket.broadcast.emit("user_leave", {time: new Date().toTimeString(), username : socket.username});
-        users = users.filter(v => v !== socket.username);
-        io.emit("user_list", { list: users});
-
-
-    });
-});
-
-
-generateUniqueId = function() {
-    return "_" + new Date().valueOf() + Math.random().toFixed(16).substring(2);
-};
-
-
-http.listen(port, function() {
+http.listen(port, function () {
     console.log("Listening on *:" + port);
 });
