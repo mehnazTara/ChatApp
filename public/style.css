@@ -1,0 +1,116 @@
+body {
+    position: absolute;
+    height: 100%;
+    min-height: 100%;
+    width: 100%;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+form {
+    border: 1px solid black;
+    background: green;
+
+    display: flex;
+    flex: 1 1 10%;
+    min-height: 3em;
+    max-height: 3em;
+}
+
+form input {
+    border: 0;
+    padding: 0.5rem;
+    width: 100%;
+    outline: 0;
+    margin-right: 0.5rem;
+    border-radius: 0.25rem;
+    background: #ccc;
+}
+
+form button {
+    width: 6rem;
+    background-color: #1b8c00;
+    color: white;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+}
+
+form button:hover {
+    background-color: #166d01;
+}
+
+.chat-wrapper {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+}
+
+.header {
+    border: 1px solid beige;
+    background: darkgray;
+    padding: 5px;
+    display: flex;
+    flex: 1 1 2%;
+    min-height: 3em;
+    max-height: 3em;
+    justify-content: center;
+    color: #166d01;
+    font-size: 14pt;
+
+
+}
+
+.chat-body {
+    border: 1px solid blue;
+    display: flex;
+    flex: 1 1 85%;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    overflow: auto;
+    height: 100%;
+}
+
+.messages {
+    width: 85%;
+    justify-content: space-between;
+    align-items: flex-end;
+    overflow: scroll;
+
+}
+
+.messages li {
+    padding: 0.5rem;
+    line-height:28px;
+    margin:0 20px 0 0;
+    vertical-align: bottom;
+    color: #000000;
+    font-family: Verdana;
+    font-weight: bold;
+    font-size: 13pt;
+
+}
+
+#time{
+    color: black;
+    padding: 5px;
+}
+
+#username{
+    color: palevioletred;
+    font-family: sans-serif;
+    padding: 5px;
+    margin: 2px;
+}
+
+.messages li:nth-child(odd) {
+    background: #eee;
+}
