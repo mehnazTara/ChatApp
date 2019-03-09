@@ -14,41 +14,50 @@ app.get("/", function(req, res) {
 });
 
 let users = [];
-let history = {};
+let history = [];
+
 let count = 1;
 const defaultUsername = "user";
 io.on("connection", function(socket) {
 
-    socket.chatHistory = new Array(200);
+    //saving chat history
+    //socket.chatHistory = history;
+
+    //assiging unique username on connection
     socket.username = defaultUsername + count;
-    console.log(socket.username);
     count = count + 1;
     users.push(socket.username);
     socket.emit("user_join", socket.username);
-
-    console.log(socket.chatHistory );
-   // socket.emit("chat_history", chatHistory);
+    socket.emit("show_nickname", socket.username);
 
 
+
+   // console.log(socket.chatHistory );
+    socket.emit("chat_history", history);
+
+    //sending users list to the client
+    io.emit("user_list", { list: users});
+
+
+    //on receiving new message from client side
     socket.on("chat_message", function(data) {
         data.username = this.username;
         data.time = new Date().toTimeString();
 
 
-        if(socket.chatHistory .length < 200) {
-            socket.chatHistory .push(data);
+        if(history.length < 200) {
+            history.push(data);
         }else{
-            socket.chatHistory  = new Array(200);
-            socket.chatHistory .push(data);
+            history.shift();
+            history.push(data);
         }
-
-        history[socket.username] = socket.chatHistory;
         console.trace(history);
-        console.log("After pushing" + history[socket.username]);
+
         io.emit("chat_message", data);
     });
 
 
+    //changing nick name request
     socket.on("change_nickname", function(data) {
         console.log("Inside change user name :" + socket.username);
 
@@ -61,13 +70,18 @@ io.on("connection", function(socket) {
             console.log(socket.username);
             users.push(socket.username);
             users = users.filter(v => v !== oldnickName);
+            io.emit("user_list", { list: users});
+            socket.emit("show_nickname", socket.username);
+
         }else{
-            socket.emit("nickname_reject", "You cannot have this nickname! Already Taken");
+            socket.emit("server_message", "You cannot have this nickname! Already Taken");
         }
 
         console.log(users);
     });
 
+
+    // changing nick name colour request
     socket.on("change_nickcolor", function(data) {
         console.log("Inside change colour name :" + socket.username);
 
@@ -78,13 +92,19 @@ io.on("connection", function(socket) {
             console.log(data.color);
             socket.emit("colour_change", "#" + data.color);
         }else{
-            socket.emit("colour_reject", "Not a valid colour hex");
+            socket.emit("server_message", "Not a valid colour hex");
         }
 
     });
 
+
+    // on disconnect
     socket.on("disconnect", function(data) {
-        socket.broadcast.emit("user_leave", this.username);
+        socket.broadcast.emit("user_leave", socket.username);
+        users = users.filter(v => v !== socket.username);
+        io.emit("user_list", { list: users});
+
+
     });
 });
 

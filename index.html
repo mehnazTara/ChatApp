@@ -4,6 +4,7 @@
     <title>Seng Chat App</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
     <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet"/>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
     <style>
 
@@ -22,14 +23,6 @@
         }
 
         form {
-            /*position: fixed;*/
-            /*bottom: 0;*/
-            /*left: 0;*/
-            /*width: 100%;*/
-            /*display: flex;*/
-            /*box-sizing: border-box;*/
-            /*padding: 0.25rem;*/
-
             border: 1px solid black;
             background: green;
 
@@ -64,79 +57,6 @@
             background-color: #166d01;
         }
 
-        /*.messages {*/
-        /*display: flex;*/
-        /*flex-direction: column;*/
-        /*flex-basis: 100%;*/
-        /*justify-content: space-between;*/
-        /*align-items: flex-start;*/
-        /*}*/
-
-        /*.messages li {*/
-        /*padding: 0.5rem;*/
-        /*line-height:28px;*/
-        /*margin:0 20px 0 0;*/
-        /*vertical-align: bottom;*/
-        /*}*/
-
-        /*.messages li:nth-child(odd) {*/
-        /*background: #eee;*/
-        /*}*/
-
-        /*#container {*/
-        /*border: 1px solid lime;*/
-        /*height: 100%;*/
-        /*position:relative;*/
-        /*}*/
-
-        /*.VAlignHelper:after {*/
-        /*content: "";*/
-        /*display: inline-block;*/
-        /*height: 100%;*/
-        /*vertical-align: bottom;*/
-        /*}*/
-
-        /*.container{*/
-        /*width: 100%;*/
-        /*height: 100%;*/
-        /*}*/
-        /*!*.row div {*!*/
-        /*!*border: 1px solid wheat;*!*/
-        /*!*}*!*/
-
-        /*.flexy {*/
-        /*display: flex;*/
-        /*text-align: center;*/
-        /*height: 100%;*/
-        /*background: #e5e6e7;*/
-        /*}*/
-
-        /*!*.flexy .bottom-align-text {*!*/
-        /*!*display: flex;*!*/
-        /*!*justify-content: center;*!*/
-        /*!*align-items: flex-end;*!*/
-
-        /*!*}*!*/
-
-        /*.row {*/
-        /*display: block;*/
-        /*flex-wrap: wrap;*/
-        /*width: 100%;*/
-        /*height: 100%;*/
-        /*background: #1b8c00;*/
-        /*border: 2px solid #888888;*/
-        /*}*/
-
-        /*#userList{*/
-        /*display: flex;*/
-        /*flex-direction: column;*/
-        /*flex-basis: 100%;*/
-        /*justify-content: space-between;*/
-        /*align-items: flex-start;*/
-        /*}*/
-
-
-
         .chat-wrapper {
             display: flex;
             flex: 1 1 auto;
@@ -149,9 +69,14 @@
             background: darkgray;
             padding: 5px;
             display: flex;
-            flex: 1 1 5%;
+            flex: 1 1 2%;
             min-height: 3em;
             max-height: 3em;
+            justify-content: center;
+            color: #166d01;
+            font-size: 14pt;
+
+
         }
 
         .chat-body {
@@ -159,9 +84,9 @@
             display: flex;
             flex: 1 1 85%;
             flex-wrap: wrap;
-            align-items: flex-start;
-            align-content: space-evenly;
+            align-items: flex-end;
             overflow: auto;
+            height: 100%;
         }
 
         .messages {
@@ -169,25 +94,24 @@
             justify-content: space-between;
             align-items: flex-end;
             background: lightcoral;
+            overflow: scroll;
+
         }
 
         .messages li {
-        padding: 0.5rem;
-        line-height:28px;
-        margin:0 20px 0 0;
-        vertical-align: bottom;
+            padding: 0.5rem;
+            line-height:28px;
+            margin:0 20px 0 0;
+            vertical-align: bottom;
+            color: #000000;
+            font-family: Verdana;
+            font-weight: bold;
+            font-size: 13pt;
+
         }
 
         .messages li:nth-child(odd) {
         background: #eee;
-        }
-
-        .box {
-            color: white;
-            background: gray;
-            margin: 1em;
-            height: 10em;
-            width: 100%;
         }
 
     </style>
@@ -199,16 +123,11 @@
     <div class="chat-body col-lg-12">
             <div id="chat-log" class="col-md-9">
                 <ul class="messages">
-                    <li class="p-2 bd-highlight">Flex item 1</li>
-                    <li class="p-2 bd-highlight">Flex item 2</li>
-                    <li class="p-2 bd-highlight">Flex item 3</li>
                 </ul>
             </div>
 
             <div id="user-list" class="col-md-3">
             <ul id="usernames" >
-                <li>HOjk</li>
-                <li>HOjk</li>
             </ul>
             </div>
     </div>
@@ -220,24 +139,14 @@
 </div>
 
 
-
-
-<!--<div id="container" class="VAlignHelper">-->
-<!--<ul class="messages"></ul>-->
-<!--</div>-->
-<!--<ul class="d-flex flex-column-reverse bd-highlight">-->
-<!--<li class="p-2 bd-highlight">Flex item 1</li>-->
-<!--<li class="p-2 bd-highlight">Flex item 2</li>-->
-<!--<li class="p-2 bd-highlight">Flex item 3</li>-->
-<!--</ul>-->
-<!--<form>-->
-<!--<input type="text" class="input" autocomplete="off" autofocus />-->
-<!--<button>Send</button>-->
-<!--</form>-->
 <script>
     const form = document.querySelector("form");
     const input = document.querySelector(".input");
     const messages = document.querySelector(".messages");
+    const users = document.querySelector("#usernames");
+    const header = document.querySelector(".header");
+
+
 
     const socket = io();
 
@@ -262,8 +171,23 @@
     socket.on("chat_history", function (data) {
         console.log(data);
         for (record of data) {
-            // time = formatTime(record.time);
-            addMessage(" " + record.username + ": " + record.message);
+            time = formatTime(record.time);
+            addMessage( time + record.username + ": " + record.message);
+        }
+    });
+
+    socket.on("user_list", function (data) {
+        //$('#user-list').empty();
+        while( users.firstChild ){
+            users.removeChild( users.firstChild );
+        }
+
+        for( user of data.list) {
+            console.log("Inside user list" + user);
+            const li = document.createElement("li");
+            li.innerHTML = user;
+
+            users.appendChild(li);
         }
     });
 
@@ -274,17 +198,29 @@
 
     socket.on("user_join", function (data) {
         addMessage("You have joined the chat as " + data + ".");
+        document.cookie = "username=" + data;
     });
 
-    socket.on("nickname_reject", function (data) {
-        addMessage(data);
-    });
+    socket.on("server_message", function (data) {
+
+        console.log("i am inside warning");
+        const li = document.createElement("li");
+        li.innerHTML = data;
+        li.color= "#ff0000";
+
+        messages.appendChild(li);
+        window.scrollTo(0, document.body.scrollHeight);
+    })
+
 
     socket.on("user_leave", function (data) {
         addMessage(data + " has left the chat.");
     });
 
-    //  addMessage("You have joined the chat as '" + username  + "'.");
+
+    socket.on("show_nickname", function (data) {
+        header.innerHTML = "Welcome to chat room, " + data + " !";
+    });
 
     function addMessage(message) {
         const li = document.createElement("li");
@@ -297,6 +233,13 @@
     function formatTime(currentTime) {
 
         return currentTime.slice(0, 5);
+    }
+
+    function checkIfCookieExists() {
+        if (document.cookie.split(';').filter((item) => item.trim().startsWith('username=')).length) {
+
+        }
+
     }
 </script>
 
