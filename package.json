@@ -1,0 +1,16 @@
+{
+  "name": "sengchatapp",
+  "version": "1.0.0",
+  "description": "Seng 513 Assignment 3",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Mehnaz Tarannum",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4",
+    "socket.io": "^2.2.0"
+  }
+}
