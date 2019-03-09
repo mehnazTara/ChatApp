@@ -93,7 +93,6 @@
             width: 85%;
             justify-content: space-between;
             align-items: flex-end;
-            background: lightcoral;
             overflow: scroll;
 
         }
@@ -108,6 +107,18 @@
             font-weight: bold;
             font-size: 13pt;
 
+        }
+
+        #time{
+            color: black;
+            padding: 5px;
+        }
+
+        #username{
+            color: palevioletred;
+            font-family: sans-serif;
+            padding: 5px;
+            margin: 2px;
         }
 
         .messages li:nth-child(odd) {
@@ -150,6 +161,17 @@
 
     const socket = io();
 
+    let existingUserName = getCookie("username");
+
+    $(document).ready(function() {
+        if(existingUserName){
+            socket.emit("existing_user", {isExisting: true, username : existingUserName});
+        }else{
+            socket.emit("existing_user", {isExisting: false, username : existingUserName});
+        }
+
+    });
+
 
     form.addEventListener("submit", function (event) {
         event.preventDefault();
@@ -172,7 +194,8 @@
         console.log(data);
         for (record of data) {
             time = formatTime(record.time);
-            addMessage( time + record.username + ": " + record.message);
+            record.time = time;
+            addMessage(record);
         }
     });
 
@@ -193,12 +216,12 @@
 
     socket.on("chat_message", function (data) {
         time = formatTime(data.time);
-        addMessage(time + " " + data.username + ": " + data.message);
+        data.time = time;
+        addMessage(data);
     });
 
     socket.on("user_join", function (data) {
         addMessage("You have joined the chat as " + data + ".");
-        document.cookie = "username=" + data;
     });
 
     socket.on("server_message", function (data) {
@@ -219,12 +242,30 @@
 
 
     socket.on("show_nickname", function (data) {
+        setCookie("username", data);
         header.innerHTML = "Welcome to chat room, " + data + " !";
     });
 
-    function addMessage(message) {
-        const li = document.createElement("li");
-        li.innerHTML = message;
+    function addMessage(data) {
+        let li = document.createElement("li");
+
+
+        let time = document.createElement("span");
+        time.setAttribute("id", "time");
+        time.innerText = data.time;
+
+        let username = document.createElement("span");
+        username.setAttribute("id", "username");
+        username.innerText = data.username + ": ";
+
+        let message = document.createElement("span");
+        message.setAttribute("id", "m");
+        message.innerText = data.message;
+
+
+        li.appendChild(time);
+        li.appendChild(username);
+        li.appendChild(message);
 
         messages.appendChild(li);
         window.scrollTo(0, document.body.scrollHeight);
@@ -235,11 +276,29 @@
         return currentTime.slice(0, 5);
     }
 
-    function checkIfCookieExists() {
-        if (document.cookie.split(';').filter((item) => item.trim().startsWith('username=')).length) {
+    //code snippet taken from https://www.w3schools.com/js/js_cookies.asp
+    function setCookie(cname, cvalue) {
+        var d = new Date();
+        d.setTime(d.getTime() + (1*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
 
+    //code snippet taken from https://www.w3schools.com/js/js_cookies.asp
+    function getCookie(cname) {
+        var name = cname + "=";
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
         }
-
+        return "";
     }
 </script>
 

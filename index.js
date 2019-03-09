@@ -20,16 +20,22 @@ let count = 1;
 const defaultUsername = "user";
 io.on("connection", function(socket) {
 
-    //saving chat history
-    //socket.chatHistory = history;
+    // check if existing user
+    socket.on("existing_user", function(data) {
 
-    //assiging unique username on connection
-    socket.username = defaultUsername + count;
-    count = count + 1;
-    users.push(socket.username);
-    socket.emit("user_join", socket.username);
-    socket.emit("show_nickname", socket.username);
+        if(data.isExisting){
+            socket.username = data.username;
+        }else {
+            //assiging unique username on connection
+            socket.username = defaultUsername + count;
+            count = count + 1;
+            users.push(socket.username);
+            socket.emit("user_join", socket.username);
+        }
 
+        socket.emit("show_nickname", socket.username);
+
+    });
 
 
    // console.log(socket.chatHistory );
