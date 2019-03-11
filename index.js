@@ -52,15 +52,10 @@ io.sockets.on("connection", function (socket) {
         let userIDcookie = getCookie(cookies, "username");
         let colorCookie = getCookie(cookies, "nick_color");
 
-        console.log(userIDcookie);
-
-
 
         if (userIDcookie) {
-            console.log("user name was existing" + userIDcookie);
             socket.username = userIDcookie;
             if (!users.includes(socket.username)) {
-                console.log("user name was not included");
                 users.push(socket.username);
             }
 
@@ -74,7 +69,6 @@ io.sockets.on("connection", function (socket) {
             }
             socket.username = defaultUsername + count;
             counts.push(count);
-            console.log("user name was not existing" + socket.username);
             users.push(socket.username);
             socket.emit("set_cookie_username", socket.username);
 
@@ -84,13 +78,14 @@ io.sockets.on("connection", function (socket) {
             socket.emit("color_change", "#" + colorCookie);
         }
 
-        socket.broadcast.emit("user_join", {time: new Date().toTimeString(), username: socket.username});
+
+        io.emit("user_join", {time: new Date().toTimeString(), username: socket.username});
         socket.emit("show_nickname", socket.username);
 
-        // console.log(socket.chatHistory );
+
         socket.emit("chat_history", history);
 
-        //sending users list to the client
+
         io.emit("user_list", {list: users});
 
 
@@ -106,7 +101,6 @@ io.sockets.on("connection", function (socket) {
                 history.shift();
                 history.push(data);
             }
-            console.trace(history);
 
             io.emit("chat_message", data);
         });
@@ -114,15 +108,13 @@ io.sockets.on("connection", function (socket) {
 
         //changing nick name request
         socket.on("change_nickname", function (data) {
-            console.log("Inside change user name :" + socket.username);
 
             oldnickName = socket.username;
 
-            let index = users.indexOf(data.username);    // <-- Not supported in <IE9
-            console.log(index);
+            // Not supported in <IE9
+            let index = users.indexOf(data.username);
             if (index === -1) {
                 socket.username = data.username;
-                console.log(socket.username);
                 users.push(socket.username);
                 users = users.filter(v => v !== oldnickName);
                 io.emit("user_list", {list: users});
@@ -138,20 +130,16 @@ io.sockets.on("connection", function (socket) {
                 });
             }
 
-            console.log(users);
         });
 
 
         // changing nick name colour request
         socket.on("change_nickcolor", function (data) {
-            console.log("Inside change colour name :" + socket.username);
-            console.log(data.color);
 
             let validHex = '/^[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}';
             let pattern = new RegExp(validHex);
 
             if (pattern.test(data.color)) {
-                console.log(data.color);
                 socket.emit("color_change", "#" + data.color);
                 socket.emit("set_cookie_color", "#" + data.color);
             } else {
@@ -164,11 +152,9 @@ io.sockets.on("connection", function (socket) {
 
         // on disconnect
         socket.on("disconnect", function (data) {
-            console.log(`Socket ${socket.id} disconnected.`);
             socket.broadcast.emit("user_leave", {time: new Date().toTimeString(), username: socket.username});
             users = users.filter(v => v !== socket.username);
             io.emit("user_list", {list: users});
-
 
         });
     }

@@ -7,6 +7,7 @@ const chatBody = document.querySelector(".chat-body");
 
 let defaultUserNameColor = "#85235e";
 
+//initializing socket connection
 const socket = io();
 
 
@@ -16,7 +17,7 @@ socket.on("set_cookie_username", function (data) {
 });
 
 
-//sets cookie for username
+//sets cookie for color
 socket.on("set_cookie_color", function (data) {
     setCookie("nick_color", data);
 });
@@ -27,7 +28,6 @@ form.addEventListener("submit", function (event) {
     event.preventDefault();
     msg = input.value;
     if (msg.startsWith("/nickcolor")) {
-        console.log("nickcolor:" + msg);
         socket.emit("change_nickcolor", {color: msg.slice(11)});
     } else if (msg.startsWith("/nick")) {
         socket.emit("change_nickname", {username: msg.slice(6)});
@@ -39,7 +39,6 @@ form.addEventListener("submit", function (event) {
     input.value = "";
     return false;
 }, false);
-
 
 
 // show past chat log (upto 200)
@@ -56,11 +55,11 @@ socket.on("chat_history", function (data) {
 //updates user list
 socket.on("user_list", function (data) {
 
-    while( users.firstChild ){
-        users.removeChild( users.firstChild );
+    while (users.firstChild) {
+        users.removeChild(users.firstChild);
     }
 
-    for( user of data.list) {
+    for (user of data.list) {
         console.log("Inside user list" + user);
         const li = document.createElement("li");
         li.innerHTML = user;
@@ -74,13 +73,13 @@ socket.on("user_list", function (data) {
 socket.on("chat_message", function (data) {
     time = formatTime(data.time);
     data.time = time;
-    addMessage(data,"#000000");
+    addMessage(data, "#000000");
 });
 
 
 // message for user to let them know of username
 socket.on("user_join", function (data) {
-    data.message = data.username  + " just joined the chat!";
+    data.message = data.username + " just joined the chat!";
     time = formatTime(data.time);
     data.time = time;
     addMessage(data, '#000000');
@@ -112,7 +111,7 @@ socket.on("show_nickname", function (data) {
 
 //changes username deafault color
 socket.on("color_change", function (data) {
-    defaultUserNameColor=data;
+    defaultUserNameColor = data;
 
 });
 
@@ -157,8 +156,8 @@ function formatTime(currentTime) {
 //code snippet taken from https://www.w3schools.com/js/js_cookies.asp
 function setCookie(cname, cvalue) {
     var d = new Date();
-    d.setTime(d.getTime() + (1*24*60*60*1000));
-    var expires = "expires="+ d.toUTCString();
+    d.setTime(d.getTime() + (24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
