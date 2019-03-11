@@ -3,9 +3,9 @@ const input = document.querySelector(".input");
 const messages = document.querySelector(".messages");
 const users = document.querySelector("#usernames");
 const header = document.querySelector(".header");
+const chatBody = document.querySelector(".chat-body");
 
-let defaultUserNameColor = "#DB7093";
-
+let defaultUserNameColor = "#85235e";
 
 const socket = io();
 
@@ -55,7 +55,7 @@ socket.on("chat_history", function (data) {
 
 //updates user list
 socket.on("user_list", function (data) {
-    //$('#user-list').empty();
+
     while( users.firstChild ){
         users.removeChild( users.firstChild );
     }
@@ -80,7 +80,7 @@ socket.on("chat_message", function (data) {
 
 // message for user to let them know of username
 socket.on("user_join", function (data) {
-    data.message = "You have joined the chat as " + data.username + ".";
+    data.message = data.username  + " just joined the chat!";
     time = formatTime(data.time);
     data.time = time;
     addMessage(data, '#000000');
@@ -128,12 +128,12 @@ function addMessage(data, messageColor) {
 
     let username = document.createElement("span");
     username.setAttribute("id", "username");
-    username.style.color=defaultUserNameColor;
+    username.style.color = defaultUserNameColor;
     username.innerText = data.username + ": ";
 
     let message = document.createElement("span");
     message.setAttribute("id", "m");
-    message.style.color=messageColor;
+    message.style.color = messageColor;
     message.innerText = data.message;
 
 
@@ -142,14 +142,14 @@ function addMessage(data, messageColor) {
     li.appendChild(message);
 
     messages.appendChild(li);
-    messages.scrollTo(0, document.body.scrollHeight);
+    chatBody.scrollTop = chatBody.scrollHeight;
 }
 
 
 // formats time stamps to show hour and mins only
 function formatTime(currentTime) {
 
-    return currentTime.slice(0, 5);
+    return currentTime.slice(0, 8);
 }
 
 
